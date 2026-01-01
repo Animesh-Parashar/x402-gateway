@@ -1,6 +1,6 @@
 {
   "name": "@x402/express",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "HTTP-native payment enforcement middleware using x402",
   "main": "src/index.js",
   "type": "commonjs",

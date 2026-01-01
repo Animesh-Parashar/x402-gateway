@@ -1,3 +1,5 @@
+// Public API — do not change without a major version bump
+
 const fetch = require('node-fetch');
 
 function createReplayCache(ttlMs) {
