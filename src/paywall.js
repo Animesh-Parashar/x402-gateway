@@ -5,7 +5,7 @@ function paywall({
   recipient,
   facilitatorUrl,
   header = 'x-payment',
-  timeoutMs = 3000
+  timeoutMs = 5000
 }) {
   if (!priceWei) throw new Error('x402.paywall requires priceWei');
   if (!recipient) throw new Error('x402.paywall requires recipient');
@@ -14,18 +14,19 @@ function paywall({
   return async function requirePayment(req, res, next) {
     const payment = req.headers[header];
 
-    // 1. No payment → advertise price
+    // 1. No payment → advertise terms
     if (!payment) {
       return res.status(402).set({
         'x402-price': priceWei,
-        'x402-recipient': recipient
+        'x402-recipient': recipient,
+        'x402-facilitator': facilitatorUrl
       }).json({ error: 'Payment required' });
     }
 
     let verifyResponse;
     try {
       const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeoutMs);
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
       verifyResponse = await fetch(`${facilitatorUrl}/verify`, {
         method: 'POST',
@@ -38,15 +39,18 @@ function paywall({
         signal: controller.signal
       });
 
-      clearTimeout(id);
+      clearTimeout(timeout);
     } catch (err) {
       return res.status(502).json({
-        error: 'Payment verification service unavailable'
+        error: 'Payment verification service unavailable',
+        facilitator: facilitatorUrl
       });
     }
 
     if (!verifyResponse.ok) {
-      return res.status(402).json({ error: 'Payment verification failed' });
+      return res.status(402).json({
+        error: 'Payment verification failed'
+      });
     }
 
     let result;
@@ -54,16 +58,18 @@ function paywall({
       result = await verifyResponse.json();
     } catch {
       return res.status(502).json({
-        error: 'Invalid verification response'
+        error: 'Invalid response from payment verifier'
       });
     }
 
-    // 2. Facilitator says NO → reject
+    // 2. Facilitator decides
     if (!result.verified) {
-      return res.status(402).json({ error: 'Payment not verified' });
+      return res.status(402).json({
+        error: 'Payment not verified'
+      });
     }
 
-    // 3. Facilitator says YES → release resource
+    // 3. Verified → release resource
     req.payment = result;
     next();
   };
