@@ -4,7 +4,9 @@
   "description": "> HTTP-native pay-per-request APIs using x402.   > No accounts. No API keys. No subscriptions.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
   },
   "repository": {
     "type": "git",
@@ -20,6 +22,7 @@
   "homepage": "https://github.com/Animesh-Parashar/x402-gateway#readme",
   "dependencies": {
     "dotenv": "^17.2.3",
+    "ethers": "^6.16.0",
     "express": "^5.2.1"
   },
   "devDependencies": {
