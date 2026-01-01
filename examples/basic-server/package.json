@@ -3,28 +3,37 @@
   "version": "0.1.0",
   "description": "HTTP-native payment enforcement middleware using x402",
   "main": "src/index.js",
-  "type": "commonjs",
   "keywords": [
     "x402",
     "payments",
     "middleware",
-    "http",
     "api",
+    "crypto",
     "agents"
   ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Animesh-Parashar/x402-gateway.git"
   },
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Animesh-Parashar/x402-gateway/issues"
   },
   "homepage": "https://github.com/Animesh-Parashar/x402-gateway#readme",
-  "license": "ISC",
-  "peerDependencies": {
-    "express": "^4 || ^5"
-  },
   "dependencies": {
-    "ethers": "^6.16.0"
+    "dotenv": "^17.2.3",
+    "ethers": "^6.16.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
   }
+
 }
