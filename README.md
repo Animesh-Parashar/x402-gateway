@@ -70,7 +70,35 @@ app.get(
 
 app.listen(3000);
 ```
+You may also use the optional replay guard as 
 
+```js
+const express = require('express');
+const { x402 } = require('@x402/express');
+
+const app = express();
+
+app.get(
+  '/api/agent/weather',
+  x402.paywall({
+    priceWei: '100000000000000',
+    recipient: '0xMerchantAddress',
+    facilitatorUrl: 'https://facilitator.example',
+    replayProtection: {
+    enabled: true,
+    ttlMs: 60000
+    }
+  }),
+  (req, res) => {
+    res.json({
+      data: 'weather data',
+      payment: req.payment
+    });
+  }
+);
+
+app.listen(3000);
+```
 A single middleware invocation:
 
 * rejects unpaid requests
@@ -194,6 +222,39 @@ The gateway does not maintain:
 * payment balances
 * settlement logic
 * background jobs
+
+---
+
+## Payment Verification & Responsibilities
+
+x402-gateway does not execute or settle payments.
+
+The gateway relies on an external **x402-compliant facilitator** to verify that a payment has already been accepted. The facilitator is treated as the source of truth for:
+
+- signature validation
+- replay protection / idempotency
+- settlement status
+- chain-specific logic
+
+Once the facilitator confirms verification, the gateway releases the requested resource.
+
+This separation keeps the gateway stateless and facilitator-agnostic.
+
+---
+
+## Operational Guarantees
+
+- **Fail-closed behavior**  
+  If the configured facilitator is unavailable or unresponsive, the gateway rejects the request with `502 Bad Gateway`.
+
+- **Timeout enforcement**  
+  Verification requests to the facilitator are subject to a configurable timeout to prevent hanging API requests.
+
+- **Replay protection**  
+  Replay protection is the responsibility of the facilitator. Gateways should assume that reused payment proofs are rejected upstream.
+
+- **Statelessness**  
+  The gateway does not maintain balances, payment state, or settlement records.
 
 ---
 
