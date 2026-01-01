@@ -1,0 +1,28 @@
+{
+  "name": "x402-gateway",
+  "version": "1.0.0",
+  "description": "> HTTP-native pay-per-request APIs using x402.   > No accounts. No API keys. No subscriptions.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Animesh-Parashar/x402-gateway.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Animesh-Parashar/x402-gateway/issues"
+  },
+  "homepage": "https://github.com/Animesh-Parashar/x402-gateway#readme",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
