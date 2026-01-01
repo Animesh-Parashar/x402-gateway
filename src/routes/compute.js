@@ -8,8 +8,11 @@ router.get('/', requirePayment, (req, res) => {
 
   res.json({
     result: `Processed: ${input}`,
+    paidBy: req.payment.payer,
+    amountPaid: req.payment.amount,
     timestamp: new Date().toISOString()
   });
 });
+
 
 module.exports = router;
