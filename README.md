@@ -1,65 +1,100 @@
 # x402-gateway
 
-> HTTP-native pay-per-request APIs using x402.  
-> No accounts. No API keys. No subscriptions.
+> HTTP-native payment enforcement for APIs.  
+> Pay-per-request. Stateless. Middleware-first.
 
+**x402-gateway** is a **drop-in HTTP middleware** that allows any server to enforce payment **directly at the request boundary** using the `402 Payment Required` status code and x402-compatible cryptographic payments.
 
-**x402-gateway** is a minimal API gateway that enforces payment at the HTTP layer using the `402 Payment Required` status code and x402-compatible payments.
+It is **not** a marketplace, SaaS, or hosted service.
 
-Clients unlock API access **per request** by attaching a valid cryptographic payment to the request itself.
+It is a **reference implementation of a protocol primitive**:
+> turning any HTTP endpoint into a paid endpoint without accounts, API keys, or subscriptions.
 
-This replaces:
+---
+
+## What Problem This Solves
+
+Today, most APIs monetize by enforcing payment at the **account level**:
+
 - API keys
 - User accounts
-- Subscription billing
-- Post-hoc usage tracking
+- Monthly billing
+- Usage tracked after execution
 
-with **stateless, machine-verifiable payment enforcement**.
-
----
-
-## Why This Matters
-
-Modern APIs assume:
-- Identity-bound users
-- Manual onboarding
-- Monthly subscriptions
-- Centralized billing systems
-
-These assumptions break when:
+This model breaks down when:
 - The consumer is autonomous software or agents
 - Usage is bursty or unpredictable
-- Global, permissionless access is required
+- Payment must be enforced *before* execution
+- Identity and onboarding are undesirable
 
-**x402-gateway enables APIs to monetize directly at the protocol level.**
+**x402-gateway enforces payment at the HTTP request level instead.**
 
 ---
 
-## What x402 Unlocks
+## Mental Model 
 
-x402 makes it possible to:
+Think of x402-gateway like:
+
+- OAuth middleware → enforces identity  
+- JWT middleware → enforces authorization  
+- **x402-gateway → enforces payment**
+
+You attach it to a route.  
+The route becomes economically protected.
+
+---
+
+## What x402 Enables
+
+By treating payment as request metadata, x402 makes it possible to:
 
 - Enforce payment *before* execution
 - Price APIs per request
 - Allow software to pay other software
-- Eliminate onboarding and credential management
-- Build pay-per-use SaaS that works for humans **and** agents
+- Eliminate API keys and onboarding flows
+- Support autonomous agents and scripts natively
+- Build pay-per-use APIs without billing dashboards
 
-Traditional systems like Stripe or RapidAPI cannot do this.
+This cannot be achieved with traditional Web2 billing systems.
 
 ---
 
-## How It Works (High Level)
+## How Companies Use This (Concrete)
 
-1. Client sends a request to a protected endpoint
-2. Server checks for a valid x402 payment
+A company with an existing API can monetize **one route** by adding middleware:
+
+```js
+app.get(
+  '/api/agent/weather',
+  requirePayment,
+  weatherAgentHandler
+);
+````
+
+That endpoint now:
+
+* Rejects unpaid requests
+* Advertises price via HTTP
+* Unlocks access immediately upon payment
+* Requires no user accounts or sessions
+
+Nothing else in the system needs to change.
+
+---
+
+## How It Works (Protocol-Level)
+
+1. A client sends an HTTP request
+2. The server checks for a valid x402 payment
 3. If missing or invalid:
-   - Responds with `402 Payment Required`
-   - Includes price and payment metadata
-4. Client retries with payment attached
-5. Server verifies payment and executes the request
 
-All within standard HTTP.
+   * Responds with `402 Payment Required`
+   * Includes price and recipient as HTTP headers
+4. The client signs a payment and retries the request
+5. The server verifies the payment cryptographically
+6. The request executes
+
+Payment enforcement happens **inside HTTP**, not before or after it.
 
 ---
 
@@ -68,8 +103,8 @@ All within standard HTTP.
 ### 1. Unpaid Request
 
 ```bash
-curl http://localhost:3000/api/compute?input=hello
-````
+curl http://localhost:3000/api/summary
+```
 
 **Response:**
 
@@ -80,21 +115,25 @@ x402-currency: ETH
 x402-recipient: 0xYourAddress
 ```
 
+This response is machine-readable and self-descriptive.
+
 ---
 
 ### 2. Paid Request
 
 ```bash
 curl \
-  -H "x402-payment: <payment-proof>" \
-  http://localhost:3000/api/compute?input=hello
+  -H "x402-payment: <signed-payment-proof>" \
+  http://localhost:3000/api/summary
 ```
 
 **Response:**
 
 ```json
 {
-  "result": "Processed: hello"
+  "result": "Processed successfully",
+  "paidBy": "0xPayerAddress",
+  "amountPaid": "100000000000000"
 }
 ```
 
@@ -102,57 +141,72 @@ curl \
 
 ## Architecture
 
-* Node.js API server
-* x402 payment verification middleware
+* Node.js HTTP server
+* Payment enforcement middleware
+* Cryptographic signature verification
 * Stateless request handling
-* Fixed price per request (configurable)
+* Fixed per-request pricing (configurable)
 
-There is **no database**, **no session state**, and **no background processing**.
+There is:
+
+* No database
+* No session state
+* No background billing jobs
+
+This is intentional.
 
 ---
 
-## Why Stripe Cannot Do This
+## Why This Is Different from Stripe
 
-Stripe requires:
+Stripe enforces payment at the level of:
 
-* User identity
+* Users
 * Accounts
-* Pre-registered payment methods
-* Off-chain enforcement
+* Sessions
+* Subscriptions
 
-x402-gateway works with:
+x402-gateway enforces payment at the level of:
 
-* Wallet-native payments
-* Stateless verification
-* Machine-to-machine usage
-* On-chain economic enforcement
+* Individual HTTP requests
 
-This is a fundamentally different model.
+Stripe answers:
+
+> “Has this user paid?”
+
+x402 answers:
+
+> “Has this request paid?”
+
+These are different layers of the stack.
 
 ---
 
 ## What This Enables Long-Term
 
-This gateway is a primitive that can evolve into:
+This primitive can be composed into:
 
 * Pay-per-tool AI services
-* Autonomous agent marketplaces
+* Agent-to-agent service markets
+* Autonomous software commerce
 * Composable API economies
-* Decentralized service meshes
-* Software-to-software commerce
+* Protocol-native SaaS monetization
+
+x402-gateway does not build these systems —
+it enables them.
 
 ---
 
 ## One-Line Pitch
 
-> We replace API keys and subscriptions with cryptographic payment at the HTTP layer.
+> We replace API keys and subscriptions with cryptographic payment enforced directly by HTTP.
 
 ---
 
 ## Status
 
-Hackathon prototype.
-Focused on clarity, determinism, and demo reliability.
+Hackathon reference implementation.
+Designed to be read, reused, and embedded into existing backends.
 
-___
+--- 
 
