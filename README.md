@@ -17,10 +17,10 @@ It allows API providers to require payment per request without introducing:
 - billing dashboards
 - centralized payment logic
 
-The middleware does **not** process or settle payments itself.  
-It relies on an external **x402-compliant facilitator** to verify that a payment has already been accepted.
+The gateway **does not process or settle payments**.  
+Instead, it delegates payment verification to an external **x402-compliant facilitator** and enforces access based on that verification.
 
-This package is intended to be embedded into existing backends.
+This package is designed to be embedded into existing backends.
 
 ---
 
@@ -54,7 +54,7 @@ const { x402 } = require('@x402/express');
 const app = express();
 
 app.get(
-  '/api/agent/weather',
+  '/api/data',
   x402.paywall({
     priceWei: '100000000000000',
     recipient: '0xMerchantAddress',
@@ -62,7 +62,7 @@ app.get(
   }),
   (req, res) => {
     res.json({
-      data: 'weather data',
+      data: 'protected resource',
       payment: req.payment
     });
   }
@@ -70,61 +70,29 @@ app.get(
 
 app.listen(3000);
 ```
-You may also use the optional replay guard as 
 
-```js
-const express = require('express');
-const { x402 } = require('@x402/express');
-
-const app = express();
-
-app.get(
-  '/api/agent/weather',
-  x402.paywall({
-    priceWei: '100000000000000',
-    recipient: '0xMerchantAddress',
-    facilitatorUrl: 'https://facilitator.example',
-    replayProtection: {
-    enabled: true,
-    ttlMs: 60000
-    }
-  }),
-  (req, res) => {
-    res.json({
-      data: 'weather data',
-      payment: req.payment
-    });
-  }
-);
-
-app.listen(3000);
-```
 A single middleware invocation:
 
 * rejects unpaid requests
 * advertises pricing via HTTP headers
-* delegates payment verification to a facilitator
-* executes the handler only after verification succeeds
+* delegates verification to a facilitator
+* releases the resource only after verification succeeds
 
 ---
 
 ## Request Flow
 
 1. Client sends an HTTP request
-2. Gateway checks for a payment proof in the request headers
+2. Gateway checks for a payment proof in request headers
 3. If missing:
-
    * responds with `402 Payment Required`
-   * includes price and recipient metadata as headers
+   * includes price, recipient, and facilitator metadata
 4. If present:
-
-   * forwards the payment proof to the configured facilitator
-5. If the facilitator confirms verification:
-
+   * forwards the proof to the configured facilitator
+5. If the facilitator verifies the payment:
    * the request proceeds
 6. Otherwise:
-
-   * the request is rejected with `402`
+   * the request is rejected
 
 Payment enforcement happens **inside the HTTP request lifecycle**.
 
@@ -132,7 +100,7 @@ Payment enforcement happens **inside the HTTP request lifecycle**.
 
 ## Facilitator Contract
 
-The gateway expects the configured facilitator to expose a verification endpoint:
+The gateway expects the facilitator to expose a verification endpoint.
 
 ### `POST /verify`
 
@@ -158,23 +126,98 @@ The gateway expects the configured facilitator to expose a verification endpoint
 }
 ```
 
-The gateway treats the facilitator as the authority on:
+The facilitator is responsible for:
 
 * signature validation
 * replay protection
-* settlement status
-* chain-specific logic
+* settlement logic
+* chain-specific behavior
 
-The gateway itself remains stateless.
+The gateway treats the facilitator as the source of truth and remains stateless.
 
 ---
 
-## Example
+## Getting Started (Local Testing with a Mock Facilitator)
 
-### Unpaid Request
+This section shows how to test x402-gateway **locally** using a simple mock facilitator running on `localhost`.
+
+### 1. Create a Mock Facilitator
+
+Create a file `mock-facilitator.js`:
+
+```js
+const express = require('express');
+const app = express();
+
+app.use(express.json());
+
+app.post('/verify', (req, res) => {
+  const { payment, priceWei, recipient } = req.body;
+
+  // Very simple mock logic:
+  // any non-empty payment is considered "verified"
+  if (!payment) {
+    return res.status(400).json({ verified: false });
+  }
+
+  res.json({
+    verified: true,
+    payer: '0xMockPayer',
+    amount: priceWei,
+    recipient,
+    txHash: '0xMockTransaction'
+  });
+});
+
+app.listen(4000, () => {
+  console.log('Mock facilitator running on http://localhost:4000');
+});
+```
+
+Run it:
 
 ```bash
-curl http://localhost:3000/api/agent/weather
+node mock-facilitator.js
+```
+
+---
+
+### 2. Create a Local API Using x402-gateway
+
+```js
+const express = require('express');
+const { x402 } = require('@x402/express');
+
+const app = express();
+
+app.get(
+  '/api/hello',
+  x402.paywall({
+    priceWei: '100000000000000',
+    recipient: '0xMerchantAddress',
+    facilitatorUrl: 'http://localhost:4000'
+  }),
+  (req, res) => {
+    res.json({
+      message: 'Hello, paid world!',
+      payment: req.payment
+    });
+  }
+);
+
+app.listen(3000, () => {
+  console.log('API running on http://localhost:3000');
+});
+```
+
+---
+
+### 3. Test the Flow
+
+#### Unpaid request
+
+```bash
+curl http://localhost:3000/api/hello
 ```
 
 Response:
@@ -183,45 +226,33 @@ Response:
 HTTP/1.1 402 Payment Required
 x402-price: 100000000000000
 x402-recipient: 0xMerchantAddress
+x402-facilitator: http://localhost:4000
 ```
 
 ---
 
-### Paid Request
+#### Paid request (mock proof)
 
 ```bash
 curl \
-  -H "x-payment: <base64-encoded-payment-proof>" \
-  http://localhost:3000/api/agent/weather
+  -H "x-payment: mock-proof-123" \
+  http://localhost:3000/api/hello
 ```
 
 Response:
 
 ```json
 {
-  "data": "weather data",
+  "message": "Hello, paid world!",
   "payment": {
-    "payer": "0xPayerAddress",
-    "txHash": "0xTransactionHash"
+    "verified": true,
+    "payer": "0xMockPayer",
+    "txHash": "0xMockTransaction"
   }
 }
 ```
 
----
-
-## Architecture
-
-* Express-compatible HTTP middleware
-* External payment verification via facilitator
-* Stateless request handling
-* Fixed per-request pricing (configurable)
-
-The gateway does not maintain:
-
-* user state
-* payment balances
-* settlement logic
-* background jobs
+You have now tested the full x402 flow locally.
 
 ---
 
@@ -229,69 +260,36 @@ The gateway does not maintain:
 
 x402-gateway does not execute or settle payments.
 
-The gateway relies on an external **x402-compliant facilitator** to verify that a payment has already been accepted. The facilitator is treated as the source of truth for:
-
-- signature validation
-- replay protection / idempotency
-- settlement status
-- chain-specific logic
-
-Once the facilitator confirms verification, the gateway releases the requested resource.
-
-This separation keeps the gateway stateless and facilitator-agnostic.
+* Verification, replay protection, and settlement are the responsibility of the facilitator.
+* The gateway enforces access strictly based on the facilitator’s response.
+* Optional local replay protection may be enabled as a rate-safety guard.
 
 ---
 
 ## Operational Guarantees
 
-- **Fail-closed behavior**  
-  If the configured facilitator is unavailable or unresponsive, the gateway rejects the request with `502 Bad Gateway`.
+* **Fail-closed behavior**
+  If the facilitator is unavailable or returns an invalid response, the request is rejected.
 
-- **Timeout enforcement**  
-  Verification requests to the facilitator are subject to a configurable timeout to prevent hanging API requests.
+* **Timeout enforcement**
+  Verification requests are subject to a configurable timeout.
 
-- **Replay protection**  
-  Replay protection is the responsibility of the facilitator. Gateways should assume that reused payment proofs are rejected upstream.
-
-- **Statelessness**  
-  The gateway does not maintain balances, payment state, or settlement records.
-
----
-
-## Comparison with Traditional Billing Systems
-
-Traditional billing systems enforce payment at the level of:
-
-* users
-* accounts
-* sessions
-* subscriptions
-
-x402-gateway enforces payment at the level of:
-
-* individual HTTP requests
-
-Traditional systems answer:
-
-> “Has this user paid?”
-
-x402-gateway answers:
-
-> “Has this request been paid for?”
+* **Statelessness**
+  The gateway does not maintain balances, sessions, or settlement state.
 
 ---
 
 ## Intended Use Cases
 
-x402-gateway is designed to be composed into systems such as:
+x402-gateway is designed to be composed into:
 
 * pay-per-request APIs
 * agent-to-agent services
 * autonomous software tooling
-* usage-based infrastructure services
+* usage-based infrastructure
 * protocol-native backends
 
-The package provides the enforcement primitive these systems depend on.
+It provides the enforcement primitive these systems depend on.
 
 ---
 
@@ -301,8 +299,8 @@ Early reference implementation.
 
 The API surface is intentionally small and opinionated, with a focus on:
 
-* composability
 * correctness
+* composability
 * facilitator interoperability
 
 ---
