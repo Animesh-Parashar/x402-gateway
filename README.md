@@ -40,7 +40,7 @@ Once attached to a route, that route is only executed if a trusted facilitator c
 ## Installation
 
 ```bash
-npm install @x402/express
+npm install github:Animesh-Parashar/x402-gateway
 ````
 
 ---
