@@ -1,4 +1,3 @@
-// X402 Adapter Interface Version
 export const ADAPTER_INTERFACE_VERSION = "1.0.0" as const;
 
 export type VerifyInput = {
@@ -30,12 +29,11 @@ export interface FacilitatorAdapter {
   verify(input: VerifyInput): Promise<VerificationResult>;
 }
 
-// Gateway configuration as provided by user
 export type X402GatewayConfig = {
   adapter: FacilitatorAdapter;
   price: string;
   recipient: string;
-  asset?: string;      // optional, defaults to "ETH"
-  header?: string;     // optional, defaults to "x-payment"
-  timeoutMs?: number;  // optional, defaults to 2000
+  asset?: string;      // optional, default "ETH"
+  header?: string;     // optional, default "x-payment"
+  timeoutMs?: number;  // optional, default 2000
 };

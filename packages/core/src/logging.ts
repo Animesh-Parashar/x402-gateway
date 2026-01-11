@@ -1,7 +1,6 @@
 import { X402Error } from "./errors";
 
 export function logX402Error(err: X402Error, context?: Record<string, any>) {
-
   const payload = {
     level: "error",
     event: "x402_error",

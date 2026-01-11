@@ -1,6 +1,6 @@
 import { FacilitatorAdapter, ADAPTER_INTERFACE_VERSION } from "./types";
-import { inputError} from "./error-factory";
-import {ErrorCodes} from "./errors"
+import { inputError } from "./error-factory";
+import { ErrorCodes } from "./errors";
 
 export function validateAdapter(adapter: FacilitatorAdapter) {
   if (!adapter || typeof adapter !== "object") {

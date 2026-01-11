@@ -1,45 +1,41 @@
-import { X402Error, ErrorCodes, ErrorCode } from "./errors";
+import { X402Error, ErrorCodes } from "./errors";
 
-// Input errors → 402
-export function inputError(code: ErrorCode, reason: string, raw?: any) {
+export function inputError(code: string, reason: string, raw?: any) {
   return new X402Error({
     origin: "gateway",
     class: "input",
-    code,
+    code: code as any,
     message: reason,
     details: { reason, raw }
   });
 }
 
-// Verification errors → 402
-export function verificationError(code: ErrorCode, reason: string, raw?: any) {
+export function verificationError(code: string, reason: string, raw?: any) {
   return new X402Error({
     origin: "facilitator",
     class: "verification",
-    code,
+    code: code as any,
     message: reason,
     details: { reason, raw }
   });
 }
 
-// Infra errors → 502
-export function infraError(code: ErrorCode, reason: string, raw?: any) {
+export function infraError(code: string, reason: string, raw?: any) {
   return new X402Error({
     origin: "adapter",
     class: "infra",
-    code,
+    code: code as any,
     message: reason,
     details: { reason, raw }
   });
 }
 
-// Internal errors → 500 (masked later)
-export function internalError(code: ErrorCode, err: unknown) {
+export function internalError(code: string, err: unknown) {
   return new X402Error({
     origin: code === ErrorCodes.ADAPTER_INTERNAL_EXCEPTION ? "adapter" : "gateway",
     class: "internal",
-    code,
+    code: code as any,
     message: "Internal error",
-    details: undefined 
+    details: undefined
   });
 }

@@ -1,16 +1,7 @@
 {
-  "name": "@x402/gateway",
-  "version": "0.1.0",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsc -w"
-  },
-  "devDependencies": {
-    "@types/node": "^20.19.28",
-    "typescript": "^5.4.0"
-  },
-  "license": "MIT"
+  "name": "x402-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
 }
