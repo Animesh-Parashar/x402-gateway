@@ -1,11 +1,13 @@
-import { X402GatewayConfig } from "x402-gateway/core";
+import { X402GatewayConfig } from "@x402/core";
 
 export function respond402(res: any, config: X402GatewayConfig) {
+  const asset = config.asset ?? "ETH";
+
   res
     .status(402)
     .set({
       "x402-price": config.price,
-      "x402-asset": config.asset ?? "ETH",
+      "x402-asset": asset,
       "x402-recipient": config.recipient,
       "x402-facilitator": config.adapter.name
     })
@@ -21,7 +23,7 @@ export function respond402(res: any, config: X402GatewayConfig) {
       },
       x402: {
         price: config.price,
-        asset: config.asset ?? "ETH",
+        asset,
         recipient: config.recipient,
         facilitator: config.adapter.name
       }

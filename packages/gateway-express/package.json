@@ -1,21 +1,20 @@
 {
-  "name": "@x402/core",
+  "name": "@x402/gateway-express",
   "version": "1.0.0",
   "type": "module",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js", 
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
+    "import": "./dist/index.mjs",
+    "require": "./dist/index.cjs"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@x402/core": "1.0.0"
+  },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.3.3"

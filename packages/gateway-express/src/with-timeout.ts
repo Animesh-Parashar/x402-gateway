@@ -2,7 +2,7 @@ export async function withTimeout<T>(
   promise: Promise<T>,
   ms: number
 ): Promise<T> {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId!: NodeJS.Timeout;
 
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
@@ -11,8 +11,7 @@ export async function withTimeout<T>(
   });
 
   try {
-    const result = await Promise.race([promise, timeoutPromise]);
-    return result as T;
+    return (await Promise.race([promise, timeoutPromise])) as T;
   } finally {
     clearTimeout(timeoutId);
   }
