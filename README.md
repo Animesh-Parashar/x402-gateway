@@ -81,11 +81,16 @@ When attached to an HTTP route:
 ```mermaid
 flowchart LR
     Client -->|HTTP Request| Gateway
-    Gateway -->|verify()| Adapter
+    Gateway -->|verify| Adapter
     Adapter -->|Verification API| Facilitator
     Facilitator -->|Response| Adapter
     Adapter -->|Result| Gateway
-    Gateway -->|Allow or 402/502| Application
+    
+    %% Success Path
+    Gateway -->|Allow| Application
+    
+    %% Failure Path (Returns to Client)
+    Gateway -.->|402 / 502| Client
 ```
 
 **Responsibility Separation**
@@ -326,26 +331,32 @@ Gateway blindly trusts facilitator result — by design.
 
 ```mermaid
 graph TD
-    subgraph Client Space
+    subgraph ClientSpace [Client Space]
       C1[Client/Agent]
     end
 
-    subgraph Gateway Space
+    subgraph GatewaySpace [Gateway Space]
       G1[x402-gateway]
       A1[Adapter]
     end
 
-    subgraph Facilitator Space
+    subgraph FacilitatorSpace [Facilitator Space]
       F1[Facilitator API]
       Chain[(Settlement Layer)]
     end
 
-    C1 -->|HTTP + proof| G1
-    G1 -->|verify()| A1
-    A1 -->|HTTP API| F1
-    F1 -->|settle/verify| Chain
-    F1 -->|result| A1
-    A1 -->|result| G1
+    subgraph Target [Protected App]
+      App[Application API]
+    end
+
+    C1 -->|1. HTTP Req + Proof| G1
+    G1 -->|2. verify| A1
+    A1 -->|3. HTTP API| F1
+    F1 <-->|4. settle/verify| Chain
+    F1 -->|5. Result| A1
+    A1 -->|6. Result| G1
+    G1 == 7a. Allowed ==> App
+    G1 -.->|7b. 402 Error| C1
 ```
 
 ---
