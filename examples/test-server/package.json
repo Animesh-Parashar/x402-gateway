@@ -1,0 +1,22 @@
+{
+  "name": "x402-test-server",
+  "version": "1.0.0",
+  "description": "Test server for x402-gateway with Thirdweb facilitator",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "mock": "node mock-facilitator.js",
+    "client": "node client.js",
+    "test": "echo 'Run: npm run mock (terminal 1), npm start (terminal 2), npm run client (terminal 3)'"
+  },
+  "dependencies": {
+    "@x402/core": "file:../../packages/core",
+    "@x402/gateway-express": "file:../../packages/gateway-express",
+    "@x402/adapter-thirdweb": "file:../../packages/adapter-thirdweb",
+    "@x402/adapter-mock": "file:../../packages/adapter-mock",
+    "express": "^4.18.2",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2"
+  }
+}
