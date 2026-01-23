@@ -30,12 +30,12 @@ export function infraError(code: string, reason: string, raw?: any) {
   });
 }
 
-export function internalError(code: string, err: unknown) {
+export function internalError(code: string, _err: unknown) {
   return new X402Error({
     origin: code === ErrorCodes.ADAPTER_INTERNAL_EXCEPTION ? "adapter" : "gateway",
     class: "internal",
     code: code as any,
     message: "Internal error",
-    details: undefined
+    details: undefined  // Intentionally masked for security
   });
 }

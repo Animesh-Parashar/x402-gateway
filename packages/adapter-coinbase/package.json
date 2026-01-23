@@ -1,20 +1,52 @@
 {
   "name": "@x402/adapter-coinbase",
   "version": "1.0.0",
+  "description": "Coinbase facilitator adapter for x402 payment gateway",
+  "keywords": [
+    "x402",
+    "coinbase",
+    "adapter",
+    "payment",
+    "facilitator",
+    "402"
+  ],
+  "author": "x402 Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/x402-org/x402-gateway.git",
+    "directory": "packages/adapter-coinbase"
+  },
+  "homepage": "https://github.com/x402-org/x402-gateway#readme",
+  "bugs": {
+    "url": "https://github.com/x402-org/x402-gateway/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    "import": "./dist/index.mjs",
-    "require": "./dist/index.cjs"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts --clean"
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@x402/core": "1.0.0",
-    "undici": "^7.18.2"
+    "undici": "^7.0.0"
   },
   "devDependencies": {
     "tsup": "^8.0.0",

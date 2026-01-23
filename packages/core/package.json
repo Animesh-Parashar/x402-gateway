@@ -1,9 +1,31 @@
 {
   "name": "@x402/core",
   "version": "1.0.0",
+  "description": "Core types, errors, and utilities for x402 HTTP payment gateway middleware",
+  "keywords": [
+    "x402",
+    "payment",
+    "402",
+    "gateway",
+    "middleware",
+    "http",
+    "crypto",
+    "blockchain"
+  ],
+  "author": "x402 Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/x402-org/x402-gateway.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/x402-org/x402-gateway#readme",
+  "bugs": {
+    "url": "https://github.com/x402-org/x402-gateway/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js", 
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
@@ -12,8 +34,17 @@
       "require": "./dist/index.cjs"
     }
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts --clean"
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {},
   "devDependencies": {

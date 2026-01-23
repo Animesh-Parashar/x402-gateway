@@ -1,91 +1,28 @@
+// src/index.ts
 import {
-  FacilitatorAdapter,
   ADAPTER_INTERFACE_VERSION,
-  VerificationResult,
-  VerifyInput,
   infraError,
   internalError
 } from "@x402/core";
 import { ErrorCodes } from "@x402/core";
 import { request } from "undici";
-
-/**
- * Configuration options for the Thirdweb x402 facilitator adapter.
- */
-export type ThirdwebAdapterOptions = {
-  /**
-   * API key for Thirdweb services.
-   * Used for authentication with the facilitator API.
-   */
-  apiKey?: string;
-
-  /**
-   * Base URL of the Thirdweb facilitator API.
-   * @default "https://x402.thirdweb.com"
-   */
-  baseUrl?: string;
-
-  /**
-   * Secret key for authentication (alternative to API key).
-   * Some facilitators may require a secret key instead of or in addition to an API key.
-   */
-  secretKey?: string;
-
-  /**
-   * Timeout in milliseconds for facilitator API requests.
-   * @default 5000
-   */
-  timeoutMs?: number;
-};
-
-/**
- * Creates a Thirdweb facilitator adapter for x402 payment verification.
- *
- * This adapter communicates with a Thirdweb-compatible x402 facilitator
- * to verify payment proofs submitted by clients.
- *
- * @example
- * ```ts
- * import { x402 } from "@x402/gateway-express";
- * import ThirdwebAdapter from "@x402/adapter-thirdweb";
- *
- * app.get("/api/data", x402({
- *   price: "0.01",
- *   recipient: "0xMerchant",
- *   adapter: ThirdwebAdapter({
- *     apiKey: process.env.THIRDWEB_API_KEY,
- *     baseUrl: "https://your-facilitator.com"
- *   })
- * }), handler);
- * ```
- *
- * @param options - Configuration options for the adapter
- * @returns A facilitator adapter instance
- */
-export default function ThirdwebAdapter(
-  options: ThirdwebAdapterOptions = {}
-): FacilitatorAdapter {
+function ThirdwebAdapter(options = {}) {
   const baseUrl = options.baseUrl ?? "https://x402.thirdweb.com";
-  const timeoutMs = options.timeoutMs ?? 5000;
-
+  const timeoutMs = options.timeoutMs ?? 5e3;
   return {
     name: "thirdweb",
     interfaceVersion: ADAPTER_INTERFACE_VERSION,
-
-    async verify(input: VerifyInput): Promise<VerificationResult> {
+    async verify(input) {
       try {
-        const headers: Record<string, string> = {
+        const headers = {
           "Content-Type": "application/json"
         };
-
-        // Add authentication headers if provided
         if (options.apiKey) {
           headers["x-api-key"] = options.apiKey;
         }
         if (options.secretKey) {
           headers["x-secret-key"] = options.secretKey;
         }
-
         const r = await request(`${baseUrl}/verify`, {
           method: "POST",
           headers,
@@ -101,8 +38,6 @@ export default function ThirdwebAdapter(
           headersTimeout: timeoutMs,
           bodyTimeout: timeoutMs
         });
-
-        // Handle HTTP-level errors
         if (r.statusCode >= 500) {
           throw infraError(
             ErrorCodes.ADAPTER_UNAVAILABLE,
@@ -110,7 +45,6 @@ export default function ThirdwebAdapter(
             { status: r.statusCode }
           );
         }
-
         if (r.statusCode === 401 || r.statusCode === 403) {
           throw infraError(
             ErrorCodes.ADAPTER_AUTH_FAILED,
@@ -118,7 +52,6 @@ export default function ThirdwebAdapter(
             { status: r.statusCode }
           );
         }
-
         if (r.statusCode === 429) {
           throw infraError(
             ErrorCodes.ADAPTER_RATE_LIMITED,
@@ -126,17 +59,12 @@ export default function ThirdwebAdapter(
             { status: r.statusCode }
           );
         }
-
-        // Parse response body
-        let data: any;
+        let data;
         try {
           data = await r.body.json();
         } catch (err) {
           throw internalError(ErrorCodes.ADAPTER_INTERNAL_EXCEPTION, err);
         }
-
-        // Handle verification failure
-        // Support both x402 v1 (verified) and v2 (isValid) response formats
         if (data.isValid !== true && data.verified !== true) {
           return {
             verified: false,
@@ -144,21 +72,14 @@ export default function ThirdwebAdapter(
             raw: data
           };
         }
-
-        // Recipient mismatch check
         const responseRecipient = data.payTo ?? data.to;
-        if (
-          responseRecipient &&
-          responseRecipient.toLowerCase() !== input.recipient.toLowerCase()
-        ) {
+        if (responseRecipient && responseRecipient.toLowerCase() !== input.recipient.toLowerCase()) {
           return {
             verified: false,
             reason: "recipient_mismatch",
             raw: data
           };
         }
-
-        // Success normalization
         return {
           verified: true,
           payer: data.payer ?? data.from,
@@ -166,18 +87,10 @@ export default function ThirdwebAdapter(
           amount: data.amount ?? input.price,
           asset: data.asset ?? input.asset
         };
-
-      } catch (err: any) {
-        // Handle undici network-level timeout errors
-        if (
-          err.code === "UND_ERR_CONNECT_TIMEOUT" ||
-          err.code === "UND_ERR_HEADERS_TIMEOUT" ||
-          err.code === "UND_ERR_BODY_TIMEOUT"
-        ) {
+      } catch (err) {
+        if (err.code === "UND_ERR_CONNECT_TIMEOUT" || err.code === "UND_ERR_HEADERS_TIMEOUT" || err.code === "UND_ERR_BODY_TIMEOUT") {
           throw infraError(ErrorCodes.ADAPTER_TIMEOUT, "Thirdweb timeout");
         }
-
-        // Network errors (ECONNREFUSED, ENOTFOUND, etc.)
         if (err.code === "ECONNREFUSED" || err.code === "ENOTFOUND") {
           throw infraError(
             ErrorCodes.ADAPTER_UNAVAILABLE,
@@ -185,18 +98,15 @@ export default function ThirdwebAdapter(
             { code: err.code }
           );
         }
-
-        // Already classified X402Error - rethrow as-is
         if (err.name === "X402Error") {
           throw err;
         }
-
-        // Everything else is an internal error
         throw internalError(ErrorCodes.ADAPTER_INTERNAL_EXCEPTION, err);
       }
     }
   };
 }
-
-// Named export for flexibility
-export { ThirdwebAdapter };
+export {
+  ThirdwebAdapter,
+  ThirdwebAdapter as default
+};

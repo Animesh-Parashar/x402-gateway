@@ -1,7 +1,31 @@
 {
   "name": "x402-monorepo",
   "private": true,
+  "description": "HTTP-native economic authorization middleware for Web2 backends",
+  "author": "x402 Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/x402-org/x402-gateway.git"
+  },
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "scripts": {
+    "build": "npm run build:core && npm run build:adapters && npm run build:gateway",
+    "build:core": "cd packages/core && npm run build",
+    "build:gateway": "cd packages/gateway-express && npm run build",
+    "build:adapters": "cd packages/adapter-coinbase && npm run build && cd ../adapter-thirdweb && npm run build && cd ../adapter-mock && npm run build",
+    "typecheck": "npm run typecheck:core && npm run typecheck:adapters && npm run typecheck:gateway",
+    "typecheck:core": "cd packages/core && npm run typecheck",
+    "typecheck:gateway": "cd packages/gateway-express && npm run typecheck",
+    "typecheck:adapters": "cd packages/adapter-coinbase && npm run typecheck && cd ../adapter-thirdweb && npm run typecheck && cd ../adapter-mock && npm run typecheck",
+    "clean": "rm -rf packages/*/dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
